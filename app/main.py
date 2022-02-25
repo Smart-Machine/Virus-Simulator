@@ -12,15 +12,13 @@ class Human:
         self.v_x = velocity * 0.3 
         self.v_y = velocity * 0.3
         self.state = state
+        self.color = color
+
+        self.set_state()
 
         self.min_width, self.min_height = 30, 30 
         self.max_width, self.max_height = 970, 470
         
-        if (state < 0):
-            self.color = 'red' 
-        else:
-            self.color = color
-
     def draw(self):
         pg.draw.circle(self.surface, self.color, (self.x, self.y), self.radius)
     
@@ -31,11 +29,23 @@ class Human:
             self.v_y *= -1
         self.x += self.v_x 
         self.y += self.v_y
+    
+    def set_state(self):
+        if (self.state < 0):
+            self.color = 'red' 
+        else:
+            self.color = self.color
 
 class App:
     def __init__(self):
         pg.init()
         pg.font.init()
+
+        self.app_state = 1
+
+        self.days = 1
+        self.days_counter = 0
+        self.simulation_speed = 1 
 
         self.resolution = self.width, self.height = 1500, 500 
         self.surface = pg.display.set_mode(self.resolution)
@@ -45,14 +55,18 @@ class App:
         self.simulation_area = pg.Rect(self.offset, self.offset, self.width - self.height - self.offset*2, self.height - self.offset*2)
 
         self.speed_range = 7 
-        self.amount_of_humans = 100 
+        self.amount_of_humans = 10000 
         self.population = self.populate()
 
         self.font_size = 25
     
     def populate(self):
-        population = []
-        radius = 5
+        population = {
+            'healthy'  : [],
+            'infected' : [],
+            'recovered': []
+        }
+        radius = 1
         for _ in range(self.amount_of_humans):
             c_x = random.randint(self.offset*2, self.width - self.height - self.offset*2)
             c_y = random.randint(self.offset*2, self.height - self.offset*2) 
@@ -60,7 +74,10 @@ class App:
             velocity = direction * random.randint(1, self.speed_range)
             state = random.randint(-10, 100)
             human = Human(self.surface, c_x, c_y, radius, velocity, state)
-            population.append(human)
+            if (state > 0):
+                population['healthy'].append(human)
+            else:
+                population['infected'].append(human)
         return population 
     
     def generate_fonts(self, string, pos):
@@ -72,21 +89,43 @@ class App:
 
     def draw(self):
         self.surface.fill('black')
-        for p in self.population:
-            p.draw()
+        for k, v in self.population.items():
+            for p in v:
+                p.draw()
         pg.draw.rect(self.surface, 'white', self.simulation_area, 2)
         self.surface.blit(self.time_font['text'], self.time_font['text_rect'])
+        self.surface.blit(self.simulation_speed_font['text'], self.simulation_speed_font['text_rect'])
         self.surface.blit(self.healthy_font['text'], self.healthy_font['text_rect'])
+        self.surface.blit(self.infected_font['text'], self.infected_font['text_rect'])
+        self.surface.blit(self.recovered_font['text'], self.recovered_font['text_rect'])
+    
+    def update_time(self):
+        if (self.days_counter % (101 - self.simulation_speed) == 0):
+            self.days += 1
+            self.days_counter = 0
+        self.days_counter += 1
 
+    def update(self, app_state):
+        self.time_text = f"Days: {self.days}"
+        self.time_font = self.generate_fonts(self.time_text, (1090, 30 + self.font_size * 0))
 
-    def update(self):
-        time = str(datetime.datetime.now().time())
-        hours, minutes, seconds = time.split(":")[0], time.split(":")[1], int(float(time.split(":")[2]))
-        self.timestamp = f"Time: {hours}:{minutes}:{seconds}"
-        self.time_font = self.generate_fonts(self.timestamp, (1050, 30 + self.font_size * 0))
+        self.simulation_speed_text = f"Simulation Speed {self.simulation_speed}"
+        self.simulation_speed_font = self.generate_fonts(self.simulation_speed_text, (1090, 30 + self.font_size * 1))
 
-        self.healthy_text = f"Healthy: {len(self.population)}"
-        self.healthy_font = self.generate_fonts(self.healthy_text, (1050, 30 + self.font_size * 1))
+        self.healthy_text = f"Healthy: {len(self.population['healthy'])}"
+        self.healthy_font = self.generate_fonts(self.healthy_text, (1090, 30 + self.font_size * 2))
+
+        self.infected_text = f"Infected: {len(self.population['infected'])}"
+        self.infected_font = self.generate_fonts(self.infected_text, (1090, 30 + self.font_size * 3))
+
+        self.recovered_text = f"Recovered: {len(self.population['recovered'])}"
+        self.recovered_font = self.generate_fonts(self.recovered_text, (1090, 30 + self.font_size * 4))
+        
+        if (app_state > 0):
+            for k, v in self.population.items():
+                for p in v:
+                    p.move()
+            self.update_time()
 
     def run(self):
         while True:
@@ -98,12 +137,16 @@ class App:
                     if event.key == pg.K_q:
                         pg.quit()
                         sys.exit()
+                    elif event.key == pg.K_p:
+                        self.app_state *= -1
+                    elif event.key == pg.K_UP:
+                        if self.simulation_speed + 1 <= 100:
+                            self.simulation_speed += 1
+                    elif event.key == pg.K_DOWN:
+                        if self.simulation_speed - 1 > 0:
+                            self.simulation_speed -= 1
 
-            self.update()
-            
-            for p in self.population:
-                p.move()
-
+            self.update(self.app_state)
             self.draw()
 
             pg.display.set_caption(f"Virus Simulator [FPS: {self.clock.get_fps():.0f}]")
