@@ -1,4 +1,5 @@
 import pygame as pg
+import random
 
 class Human:
     def __init__(self, surface, x, y, radius=5, velocity=1, state=0, color='white'):
@@ -29,7 +30,7 @@ class Human:
     
     def set_state(self):
         if (self.state < 0):
-            self.color = 'red' 
+            self.color = random.choice(['red', 'green']) 
         else:
             self.color = self.color
 

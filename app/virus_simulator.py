@@ -4,7 +4,11 @@ import sys
 import datetime
 from human import *
 
+
 class App:
+    """
+        
+    """
     def __init__(self):
         pg.init()
         pg.font.init()
@@ -26,11 +30,25 @@ class App:
         self.simulation_area = pg.Rect(self.offset, self.offset, self.width - self.height - self.offset*2, self.height - self.offset*2)
 
         self.speed_range = 7  
-        self.radius = 1
+        self.radius = 3
         self.amount_of_humans = 1000 
         self.population = self.populate()
 
         self.font_size = 25
+
+    def switch_theme(self):
+        if (self.background_color == 'black'):
+            self.background_color = 'white'
+            self.frame_color = 'black'
+            for p in self.population['healthy']:
+                p.color = 'black'
+
+        elif (self.background_color == 'white'):
+            self.background_color = 'black'
+            self.frame_color = 'white'
+            for p in self.population['healthy']:
+                p.color = 'white'
+
     
     def populate(self):
         population = {
@@ -38,6 +56,7 @@ class App:
             'infected' : [],
             'recovered': []
         }
+
         for _ in range(self.amount_of_humans):
             c_x = random.randint(self.offset*2, self.width - self.height - self.offset*2)
             c_y = random.randint(self.offset*2, self.height - self.offset*2) 
@@ -45,10 +64,16 @@ class App:
             velocity = direction * random.randint(1, self.speed_range)
             state = random.randint(-10, 100)
             human = Human(self.surface, c_x, c_y, self.radius, velocity, state)
-            if (state > 0):
-                population['healthy'].append(human)
-            else:
+            
+            if (human.color == 'red'):
                 population['infected'].append(human)
+
+            elif (human.color == 'green'):
+                population['recovered'].append(human)
+
+            else:
+                population['healthy'].append(human)
+
         return population 
     
     def generate_fonts(self, string, pos):
@@ -104,29 +129,26 @@ class App:
                 if event.type == pg.QUIT:
                     pg.quit()
                     sys.exit()
+
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_q:
                         pg.quit()
                         sys.exit()
+
                     elif event.key == pg.K_p:
                         self.app_state *= -1
+
                     elif event.key == pg.K_r:
                         pg.quit()
                         self.__init__()
+
                     elif event.key == pg.K_t:
-                        if (self.background_color == 'black'):
-                            self.background_color = 'white'
-                            self.frame_color = 'black'
-                            for p in self.population['healthy']:
-                                p.color = 'black'
-                        elif (self.background_color == 'white'):
-                            self.background_color = 'black'
-                            self.frame_color = 'white'
-                            for p in self.population['healthy']:
-                                p.color = 'white'
+                        self.switch_theme()
+
                     elif event.key == pg.K_UP:
                         if self.simulation_speed + 10 <= 100:
                             self.simulation_speed += 10
+
                     elif event.key == pg.K_DOWN:
                         if self.simulation_speed - 10 > 0:
                             self.simulation_speed -= 10
