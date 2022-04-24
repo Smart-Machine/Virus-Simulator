@@ -20,9 +20,11 @@ def welcome_page():
 def handle_data():
 
     if request.method == 'POST':
-        for k, v in request.form.items():
-            dataset[k] = v
-        # print(dataset.get())
+        # print(f"T: {request.form['timestamp']}   C: {request.form['cases']}")
+        dataset.add(
+            timestamp=request.form['timestamp'],
+            cases=request.form['cases']
+        )
         return "Server recievied."
 
     if request.method == 'GET':

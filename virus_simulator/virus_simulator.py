@@ -1,8 +1,6 @@
-from distutils.log import error
 import os
 import random 
 import sys
-import datetime
 import requests
 from human import *
 
@@ -134,7 +132,7 @@ class App:
         self.time_text = f"Days: {self.days}"
         self.time_font = self.generate_fonts(self.time_text, (1090, 30 + self.font_size * 0))
 
-        self.simulation_speed_text = f"Simulation Speed {self.simulation_speed}"
+        self.simulation_speed_text = f"Simulation Speed {self.simulation_speed}%"
         self.simulation_speed_font = self.generate_fonts(self.simulation_speed_text, (1090, 30 + self.font_size * 1))
 
         self.healthy_text = f"Healthy: {len(self.population['healthy'])}"
