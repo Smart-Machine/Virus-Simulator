@@ -2,11 +2,10 @@
 Virus Simulation.
 
 Usage:
-    virus_simulator.py 
-    virus_simulator.py run
-    virus_simulator.py debug
-    virus_simulator.py -h | --help
-    virus_simulator.py --version
+    virus_simulator 
+    virus_simulator run
+    virus_simulator -h | --help
+    virus_simulator --version
 
 Options:
     -h --help   Shows this screen.
@@ -14,9 +13,12 @@ Options:
 
 """
 
+import threading
+
+
 def run_server():
     import os
-    os.system('python api')
+    os.system('python api run')
 
 
 if __name__ == '__main__':
@@ -28,17 +30,15 @@ if __name__ == '__main__':
     arguments = docopt(__doc__, version='Virus Simulation v.1.0.')
 
     if arguments['run']:
-        api_process = Thread(target = run_server)
-        app = virus_simulator.App()
 
-        api_process.start()
-        app.run()
-        api_process.join()
-    
-    if arguments['debug']:
-        #run in debug mode
-        pass 
+        try: 
+            api_process = Thread(target = run_server)
+            app = virus_simulator.App()
 
+            api_process.start()
+            app.run()
+            api_process.join()
 
-    # if arguments['']:
-    #     ...
+        except KeyboardInterrupt:
+            print("Exit.")
+
