@@ -1,6 +1,7 @@
 import os
-import random 
 import sys
+import math
+import random 
 import requests
 from human import *
 
@@ -11,7 +12,7 @@ import pygame as pg
 class App:
 
     """
-        t    : switche themes
+        t    : switch themes
         r    : reset
         p    : pause
         q    : quit
@@ -19,19 +20,23 @@ class App:
         DOWN : speed down simulation
     """
 
-    def __init__(self) -> None:
+    GRAY = (138, 140, 138)
+    BLUE = ( 40, 193, 239)
+
+    def __init__(self, mode='server') -> None:
 
         self.url = 'http://127.0.0.1:5000/data' 
+        self.mode = mode
 
         pg.init()
         pg.font.init()
 
-        self.app_state = 1
+        self.app_state = -1
         self.resolution = self.width, self.height = 1500, 500 
         self.surface = pg.display.set_mode(self.resolution)
         self.clock   = pg.time.Clock()
 
-        self.background_color = 'black'
+        self.background_color = self.GRAY
         self.frame_color = 'white'
         self.font_size = 25
 
@@ -47,12 +52,12 @@ class App:
         self.days_counter = 0
         self.simulation_speed = 10 
 
-        self.speed_range = 7  
-        self.radius = 3
-        self.amount_of_humans = 1000 
+        self.speed_range = 4  
+        self.radius = 3 
+        self.amount_of_humans = 1000
         self.population = self.populate()
 
-        self.cases = 1 
+        self.cases = len(self.population['infected']) 
 
     
     def send_data(self, url: str, **data: dict) -> None:
@@ -65,14 +70,14 @@ class App:
 
     def switch_theme(self) -> None:
 
-        if self.background_color == 'black':
+        if self.background_color == self.GRAY:
             self.background_color = 'white'
-            self.frame_color = 'black'
+            self.frame_color = self.GRAY 
             for p in self.population['healthy']:
-                p.color = 'black'
+                p.color = self.GRAY 
 
         elif self.background_color == 'white':
-            self.background_color = 'black'
+            self.background_color = self.GRAY 
             self.frame_color = 'white'
             for p in self.population['healthy']:
                 p.color = 'white'
@@ -81,28 +86,32 @@ class App:
     def populate(self) -> dict:
 
         population = {
-            'healthy'  : [],
-            'infected' : [],
-            'recovered': []
+            'susceptible' : [],
+            'infected'    : [],
+            'recovered'   : [],
+            'dead'        : []
         }
 
         for _ in range(self.amount_of_humans):
-            c_x = random.randint(self.offset*2, self.width - self.height - self.offset*2)
-            c_y = random.randint(self.offset*2, self.height - self.offset*2) 
+            x = random.randint(self.offset*2, self.width - self.height - self.offset*2)
+            y = random.randint(self.offset*2, self.height - self.offset*2) 
+
             direction = random.choice([1, -1])
             velocity = direction * random.randint(1, self.speed_range)
-            state = random.randint(-10, 100)
 
-            human = Human(self.surface, c_x, c_y, self.radius, velocity, state)
+            # TODO: implement input for infected %
+            # for now it will be 3%
+            if random.randint(0, 100) < 3:
+                state = 'infected'
+            else :
+                state = 'susceptible'
+
+            human = Human(self.surface, x, y, self.radius, velocity, state)
             
-            if (human.color == 'red'):
+            if human.state == 'infected':
                 population['infected'].append(human)
-
-            elif (human.color == 'green'):
-                population['recovered'].append(human)
-
             else:
-                population['healthy'].append(human)
+                population['susceptible'].append(human)
 
         return population 
     
@@ -132,6 +141,7 @@ class App:
         self.surface.blit(self.healthy_font['text'], self.healthy_font['text_rect'])
         self.surface.blit(self.infected_font['text'], self.infected_font['text_rect'])
         self.surface.blit(self.recovered_font['text'], self.recovered_font['text_rect'])
+        self.surface.blit(self.dead_font['text'], self.dead_font['text_rect'])
     
 
     def update_time(self) -> None:
@@ -140,10 +150,33 @@ class App:
             self.days += 1
             self.days_counter = 0
 
+            for p in self.population['infected']:
+                chance_of_death = random.randint(1, 100)
+
+                if p.recovered_time < 1:
+                    if chance_of_death <= 30:
+                        try: 
+                            self.population['infected'].remove(p)
+                            p.state = 'dead'
+                            p.color = 'black'
+                            self.population['dead'].append(p)
+                        except:
+                            pass
+                    else :
+                        try:
+                            self.population['infected'].remove(p)
+                            p.state = 'recovered'
+                            p.color = self.BLUE 
+                            self.population['recovered'].append(p)
+                        except:
+                            pass
+                else:
+                    p.recovered_time -= 1
+
         self.days_counter += 1
 
 
-    def update(self, app_state: int) -> None:
+    def update(self, app_state: int, mode: str) -> None:
 
         self.time_text = f"Days: {self.days}"
         self.time_font = self.generate_fonts(
@@ -157,7 +190,7 @@ class App:
             (1090, 30 + self.font_size * 1)
         )
 
-        self.healthy_text = f"Healthy: {len(self.population['healthy'])}"
+        self.healthy_text = f"Healthy: {len(self.population['susceptible'])}"
         self.healthy_font = self.generate_fonts(
             self.healthy_text, 
             (1090, 30 + self.font_size * 2)
@@ -174,21 +207,43 @@ class App:
             self.recovered_text, 
             (1090, 30 + self.font_size * 4)
         )
+
+        self.dead_text = f"Dead: {len(self.population['dead'])}"
+        self.dead_font = self.generate_fonts(
+            self.dead_text,
+            (1090, 30 + self.font_size * 5)
+        )
         
         if app_state > 0:
 
-            for k, v in self.population.items():
-                for p in v:
-                    p.move(self.simulation_speed)
+            for p in self.population['susceptible']:
+                for i in self.population['infected']:
+                    if p != i and math.sqrt( (p.x-i.x)**2 + (p.y-i.y)**2 ) <= p.radius*2: 
+                        try:
+                            self.population['susceptible'].remove(p)
+                            p.state = 'infected'
+                            p.color = 'red'
+                            self.population['infected'].append(p)
+                        except:
+                            pass
+            
+            for p in self.population['susceptible']:
+                p.move(self.simulation_speed)
+            for p in self.population['infected']:
+                p.move(self.simulation_speed)
+            for p in self.population['recovered']:
+                p.move(self.simulation_speed)
 
-            self.send_data(
-                self.url, 
-                timestamp = self.days,
-                cases = self.cases
-            )
+            if mode == 'server':
+                self.send_data(
+                    self.url, 
+                    timestamp = self.days,
+                    cases = self.cases
+                )
+
             self.update_time()
-        
-        self.cases += 1
+
+        self.cases = len(self.population['infected'])  
 
 
     def run(self) -> None:
@@ -209,7 +264,7 @@ class App:
 
                     elif event.key == pg.K_r:
                         pg.quit()
-                        self.__init__()
+                        self.__init__(mode=self.mode)
 
                     elif event.key == pg.K_t:
                         self.switch_theme()
@@ -222,7 +277,7 @@ class App:
                         if self.simulation_speed - 10 > 0:
                             self.simulation_speed -= 10
 
-            self.update(self.app_state)
+            self.update(self.app_state, self.mode)
             self.draw()
 
             pg.display.set_caption(f"Virus Simulator [FPS: {self.clock.get_fps():.0f}]")

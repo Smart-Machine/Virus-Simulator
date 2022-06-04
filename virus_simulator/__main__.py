@@ -2,8 +2,8 @@
 Virus Simulation.
 
 Usage:
-    virus_simulator 
-    virus_simulator run
+    virus_simulator run --server
+    virus_simulator run --serverless 
     virus_simulator -h | --help
     virus_simulator --version
 
@@ -12,8 +12,6 @@ Options:
     --version   Shows version.
 
 """
-
-import threading
 
 
 def run_server():
@@ -29,7 +27,7 @@ if __name__ == '__main__':
 
     arguments = docopt(__doc__, version='Virus Simulation v.1.0.')
 
-    if arguments['run']:
+    if arguments['--server']:
 
         try: 
             api_process = Thread(target = run_server)
@@ -41,4 +39,15 @@ if __name__ == '__main__':
 
         except KeyboardInterrupt:
             print("Exit.")
+    
+
+    if arguments['--serverless']:
+ 
+        try: 
+            app = virus_simulator.App(mode='serverless')
+            app.run()
+
+        except KeyboardInterrupt:
+            print("Exit.")
+        
 
