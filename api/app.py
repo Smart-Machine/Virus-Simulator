@@ -20,10 +20,12 @@ def welcome_page():
 def handle_data():
 
     if request.method == 'POST':
-        # print(f"T: {request.form['timestamp']}   C: {request.form['cases']}")
         dataset.add(
             timestamp=request.form['timestamp'],
-            cases=request.form['cases']
+            cases=request.form['cases'],
+            deaths=request.form['deaths'],
+            recoveries=request.form['recoveries'],
+            infected=request.form['infected']
         )
         return "Server recievied."
 

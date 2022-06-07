@@ -29,7 +29,8 @@ class Human:
         radius: int = 5, 
         velocity: int = 1, 
         state: int = 0, 
-        color: str = 'white'
+        color: str = 'white',
+        time: int = 7
     ) -> None:
 
         self.surface = surface 
@@ -46,7 +47,7 @@ class Human:
         self.min_width, self.min_height = 30, 30 
         self.max_width, self.max_height = 970, 470
 
-        self.recovered_time = 7 
+        self.recovered_time = time 
         
 
     def draw(self) -> None:

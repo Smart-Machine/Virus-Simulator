@@ -21,7 +21,7 @@
 
     * switch theme fix
     * add input for user for :
-        - number of population 
+        + number of population 
         - time for recovery 
         - transmission rate 
         - virus spread radius 
